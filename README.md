@@ -1,5 +1,6 @@
 # Installing Kubernetes the hard way
 This is an experiment to create an automated install of a 3 node Kubernetes cluster - 1 master and 2 worker nodes.
+The scripts are subject to furthr improvement, as there are hardcoded values where I should use variables anc cycles and flexible configurations. I will improve, I promise.
 
 ## Components used
 
