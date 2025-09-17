@@ -1,0 +1,7 @@
+[controlplane]
+master ansible_ssh_host=192.168.101.10
+
+[workers]
+node1  ansible_ssh_host=192.168.101.11
+node2 ansible_ssh_host=192.168.101.12
+

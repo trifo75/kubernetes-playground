@@ -1,0 +1,116 @@
+---
+- name: prepare nodes for kubernetes
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: populate hosts file
+      blockinfile:
+        path: /etc/hosts
+        block: |
+          192.168.101.10 master
+          192.168.101.11 node1
+          192.168.101.12 node2
+      tags: [setupaccess]
+
+    - name: Enable passwordless sudo for admin user
+      copy:
+        dest: /etc/sudoers.d/admin
+        content: |
+          admin ALL=(ALL) NOPASSWD:ALL
+      tags: [setupaccess]
+
+    - name: generate SSH key for inter-node auth
+      openssh_keypair:
+        path: internode_id_rsa
+      become: false
+      run_once: true
+      delegate_to: localhost
+      tags: [setupaccess]
+
+    - name: Put own authorized key to nodes
+      authorized_key:
+        user: "{{ item }}"
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+      loop:
+        - admin
+        - root
+      tags: [setupaccess]
+
+    - name: Put own authorized key to nodes
+      authorized_key:
+        user: "{{ item }}"
+        state: present
+        key: "{{ lookup('file', 'internode_id_rsa.pub') }}"
+      loop:
+        - admin
+        - root
+      tags: [setupaccess]
+
+    - name: put private key to admin
+      copy:
+        src: internode_id_rsa
+        dest: "~admin/.ssh/id_rsa"
+        mode: 0600
+      become: false
+      tags: [setupaccess]
+
+    - name: put public key to admin
+      copy:
+        src: internode_id_rsa.pub
+        dest: "~admin/.ssh/id_rsa.pub"
+        mode: 0600
+      become: false
+      tags: [setupaccess]
+
+    - name: put private key to root
+      copy:
+        src: internode_id_rsa
+        dest: "~root/.ssh/id_rsa"
+        mode: 0600
+      tags: [setupaccess]
+
+    - name: put public key to root
+      copy:
+        src: internode_id_rsa.pub
+        dest: "~root/.ssh/id_rsa.pub"
+        mode: 0600
+      tags: [setupaccess]
+
+    - name: populate known_hosts for admin
+      shell: ssh -o StrictHostKeyChecking=false {{ item }} -- true
+      loop: "{{ play_hosts }}"
+      become: false
+      tags: [setupaccess]
+
+    - name: populate known_hosts for root
+      shell: ssh -o StrictHostKeyChecking=false {{ item }} -- true
+      loop: "{{ play_hosts }}"
+      tags: [setupaccess]
+
+    - name: Set required kernel modules
+      copy:
+        content: |
+          overlay
+          br_netfilter
+        dest: /etc/modules-load.d/k8s.conf
+        owner: root
+        group: root
+        mode: "0644"
+      tags: [kernel]
+
+        #- name: Load new modules (might not be needed)
+        #      modprobe:
+        #        name: "{{ item }}"
+        #        state: present
+        #      loop:
+        #        - overlay
+        #        - br_netfilter
+        #      tags: [kernel]
+
+    - name: restart systemd-modules-load service
+      systemd:
+        name: systemd-modules-load.service
+        state: restarted
+      tags: [kernel]
