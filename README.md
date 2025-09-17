@@ -10,6 +10,7 @@ This is an experiment to create an automated install of a 3 node Kubernetes clus
 ## Directory structure
 
 *terraform* - terraform code for node provision
+
 *ansible* - Ansible scripts, config and inventory
 
 ## Prerequisites
