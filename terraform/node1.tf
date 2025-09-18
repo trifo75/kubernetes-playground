@@ -49,7 +49,7 @@ resource "null_resource" "configure_node1" {
     command = <<EOT
 # Install SSH server
 incus exec node1 -- apt update
-incus exec node1 -- apt install -y openssh-server
+incus exec node1 -- apt install -y openssh-server apt-transport-https ca-certificates curl
 
 # Create admin user with password
 incus exec node1 -- useradd -m -s /bin/bash admin
@@ -74,6 +74,8 @@ network:
         - to: 0.0.0.0/0
           via: 192.168.101.1
 EOF'
+
+incus exec node1 -- chmod 600 /etc/netplan/50-static.yaml
 
 # Apply netplan
 incus exec node1 -- netplan apply

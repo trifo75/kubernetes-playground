@@ -30,7 +30,8 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
   *  sshd installed and started
   *  sudo for 'admin' user enabled
  
-* in 'ansible' directory run 'ansible-playbook preparenodes.yml'. This does the following
+* in 'ansible' directory run 'ansible-playbook -k -K preparenodes.yml'. This does the following
+   * asks for connection password - provide password 'kubepass"
    * enable pubkey auth from the host to the nodes as 'admin' and as 'root'
    * creates a keypair and distributes to the nodes to communicate with each other as admin or root
    * populates /etc/hosts files on nodes
@@ -39,6 +40,8 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
    * prepare kernel config for Kubernetes - this is broken yet
    * TODO install containerd
    * TODO continue with Kubernetes install
+
+   **Warning:** Ansible is configured in a highly insecure way: plain text password saved in the project directory in the file *very_insecure_password_file*. Also ansible.cfg is configured to read connection password and become password from this file when passwordless pubkey auth is not configured yet towards the nodes.
 
  ## status /  caveat
 
@@ -52,3 +55,4 @@ Other option is `security.syscalls.intercept.modprobe` - does this enable to for
 
 * reorganize terraform code to use variables and cycles
 * reorganize cloud_init to get rid of the long list of injected commands
+* implement wait time before destroying storage pool - 15s is enough after destroying instances

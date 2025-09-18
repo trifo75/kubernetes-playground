@@ -49,7 +49,7 @@ resource "null_resource" "configure_node2" {
     command = <<EOT
 # Install SSH server
 incus exec node2 -- apt update
-incus exec node2 -- apt install -y openssh-server
+incus exec node2 -- apt install -y openssh-server apt-transport-https ca-certificates curl
 
 # Create admin user with password
 incus exec node2 -- useradd -m -s /bin/bash admin
@@ -61,6 +61,7 @@ incus exec node2 -- systemctl enable ssh
 incus exec node2 -- systemctl start ssh
 
 # Configure static IP via netplan
+
 incus exec node2 -- bash -c 'cat >/etc/netplan/50-static.yaml <<EOF
 network:
   version: 2
@@ -74,6 +75,8 @@ network:
         - to: 0.0.0.0/0
           via: 192.168.101.1
 EOF'
+
+incus exec node2 -- chmod 600 /etc/netplan/50-static.yaml
 
 # Apply netplan
 incus exec node2 -- netplan apply

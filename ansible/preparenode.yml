@@ -4,6 +4,13 @@
   become: true
   gather_facts: false
   tasks:
+    # this is to eliminate error messages when the host keys are changing 
+    # e.q. regenerating reapply terraform after a destroy
+    - name: Clear ssh host keys of the nodes
+      shell: ssh-keygen -R {{ ansible_ssh_host }}
+      become: false
+      delegate_to: localhost
+
     - name: populate hosts file
       blockinfile:
         path: /etc/hosts
@@ -89,28 +96,33 @@
       loop: "{{ play_hosts }}"
       tags: [setupaccess]
 
-    - name: Set required kernel modules
-      copy:
-        content: |
-          overlay
-          br_netfilter
-        dest: /etc/modules-load.d/k8s.conf
-        owner: root
-        group: root
-        mode: "0644"
-      tags: [kernel]
 
-        #- name: Load new modules (might not be needed)
-        #      modprobe:
-        #        name: "{{ item }}"
-        #        state: present
-        #      loop:
-        #        - overlay
-        #        - br_netfilter
-        #      tags: [kernel]
+    ### KERNEL PARAMETERS AND MODULES ARE HANDLED BY TERRAFORM IN ADVANCE
+    # lxc/incus system containers use the hosts's kernel along with its 
+    # modules and settings, so it has to be handled in terraform
+    
+    # - name: Set required kernel modules
+    #   copy:
+    #     content: |
+    #       overlay
+    #       br_netfilter
+    #     dest: /etc/modules-load.d/k8s.conf
+    #     owner: root
+    #     group: root
+    #     mode: "0644"
+    #   tags: [kernel]
 
-    - name: restart systemd-modules-load service
-      systemd:
-        name: systemd-modules-load.service
-        state: restarted
-      tags: [kernel]
+    # - name: Load new modules (might not be needed)
+    #       modprobe:
+    #         name: "{{ item }}"
+    #         state: present
+    #       loop:
+    #         - overlay
+    #         - br_netfilter
+    #       tags: [kernel]
+
+    # - name: restart systemd-modules-load service
+    #   systemd:
+    #     name: systemd-modules-load.service
+    #     state: restarted
+    #   tags: [kernel]
