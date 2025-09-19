@@ -38,18 +38,33 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
    * populates known_hosts files for admin and root on all nodes
    * enable passwordless sudo for admin on all nodes
    * prepare kernel config for Kubernetes - this is broken yet
-   * TODO install containerd
-   * TODO continue with Kubernetes install
+   * install containerd
+   * install (and set hold) Kubernetes packages: kubelet, kubeadm and kubectl
 
    **Warning:** Ansible is configured in a highly insecure way: plain text password saved in the project directory in the file *very_insecure_password_file*. Also ansible.cfg is configured to read connection password and become password from this file when passwordless pubkey auth is not configured yet towards the nodes.
 
+   **Warning** In this environement every node has only one IP address. If you create an env where there are multiple addresses configured, you have to make sure `kubelet` is using one that is able to communivate with other nodes. For example VirtualBox Nat adapters can be used to reach the internet, but no communication between the nodes. Then you must explicitly tell which address is to be used by kubelet. You can set this in `/etc/default/kubelet` file, as follows:
+   `KUBELET_EXTRA_ARGS='--node-ip 111.222.33.44'`
+   Obviously edit content for your needs.
+
  ## status /  caveat
 
-Incus system container cannot load kernel modules on it's own. Host system should load necessary modules and enable containers to use them usin sysctl - but how?
+Incus system container cannot load kernel modules on it's own.
  
 Incus instances should *ask* the host to load kernel parameters, using instance config option `linux.kernel_modules = [overlay, br_netfilter]` This way - as the container uses the hosts's kernel, required modules will be available in the container.
 
 Other option is `security.syscalls.intercept.modprobe` - does this enable to forward the modprobe request from the container to the host?
+
+In my host OS I have a kernel which lacks `/proc/config.gz` so `kubeadm init` fails on pre-flight check. Here is what to check manually:
+* `lsmod | grep -E 'overlay|br_netfilter|nf_conntrack|ip_tables|ip_vs'`
+* `sysctl net.bridge.bridge-nf-call-iptables`
+* `sysctl net.ipv4.ip_forward`
+* `mount | grep cgroup`
+
+`kubeadm init` still fails. The error is: required cgroups disabled
+
+
+
 
 ## Incus basics
 
@@ -80,5 +95,4 @@ Recreate insance and config it to use static IP
 ## TODO
 
 * reorganize terraform code to use variables and cycles
-* reorganize cloud_init to get rid of the long list of injected commands
 * implement wait time before destroying storage pool - 15s is enough after destroying instances

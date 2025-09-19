@@ -58,9 +58,18 @@ resource "incus_profile" "kubelab" {
     }
   }
 
+  device {
+    name =   "kmsg"
+    type =   "unix-char"
+    properties = {
+      path =   "/dev/kmsg"
+      source = "/dev/kmsg"
+    }
+  }
+
   config = {
     # Enable loading kernel modules
-    "linux.kernel_modules" = "overlay, br_netfilter"
+    "linux.kernel_modules" = "ip_tables,ip6_tables,nf_nat,overlay,br_netfilter"
 
     # Security/syscalls configs
     "security.syscalls.intercept.setxattr"    = "true"
@@ -75,11 +84,44 @@ resource "incus_profile" "kubelab" {
     # which were written in /etx/sysctl.d/99-kubernetes.conf if it were a normal host
     # (another way would be to set these on the host OS permanently)
     "raw.lxc" = <<-EOT
+      lxc.apparmor.profile=unconfined
+      #lxc.cap.drop= 
+      lxc.cgroup.devices.allow=a
       lxc.sysctl.net.ipv4.ip_forward=1
       lxc.sysctl.net.bridge.bridge-nf-call-iptables=1
       lxc.sysctl.net.bridge.bridge-nf-call-ip6tables=1
+      lxc.cgroup2.devices.allow=a
+      #lxc.cgroup2.controllers=cpuset,cpu,io,memory,hugetlb,pids,rdma,misc,dmem
+
     EOT
   }
 
 }
 
+# #####################################
+# config:
+#   limits.cpu: "2"
+#   limits.memory: 2GB
+#   limits.memory.swap: "false"
+#   linux.kernel_modules: ip_tables,ip6_tables,nf_nat,overlay,br_netfilter
+#   raw.lxc: "lxc.apparmor.profile=unconfined\nlxc.cap.drop= \nlxc.cgroup.devices.allow=a\nlxc.mount.auto=proc:rw
+#     sys:rw"
+#   security.privileged: "true"
+#   security.nesting: "true"
+# description: LXD profile for Kubernetes
+# devices:
+#   eth0:
+#     name: eth0
+#     nictype: bridged
+#     parent: lxdbr0
+#     type: nic
+#   kmsg:
+#     path: /dev/kmsg
+#     source: /dev/kmsg
+#     type: unix-char
+#   root:
+#     path: /
+#     pool: default
+#     type: disk
+# name: k8s
+# used_by: []
