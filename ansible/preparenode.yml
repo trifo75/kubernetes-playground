@@ -100,7 +100,7 @@
     ### KERNEL PARAMETERS AND MODULES ARE HANDLED BY TERRAFORM IN ADVANCE
     # lxc/incus system containers use the hosts's kernel along with its 
     # modules and settings, so it has to be handled in terraform
-    
+
     # - name: Set required kernel modules
     #   copy:
     #     content: |
@@ -126,3 +126,6 @@
     #     name: systemd-modules-load.service
     #     state: restarted
     #   tags: [kernel]
+
+    - name: Install containerd
+      debug: msg=TODO
