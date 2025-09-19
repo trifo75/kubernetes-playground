@@ -51,6 +51,32 @@ Incus instances should *ask* the host to load kernel parameters, using instance 
 
 Other option is `security.syscalls.intercept.modprobe` - does this enable to forward the modprobe request from the container to the host?
 
+## Incus basics
+
+These commands create a test host in the way terraform should. This was necessary because of a struggle setting up hosts with static IP addresses without messing up name resolution.
+
+Incus network creation by hand.
+`incus network create kube_br0 ipv4.address=192.168.101.1/24 ipv4.nat=true ipv6.address=none`
+
+Storage pool creation
+`incus storage create kubepool dir`
+
+Set up Incus profile "kubelab", adding a default `eth0` network interface, connecting into `kube_br0` network and a root disk from `kubepool` storage pool
+`incus profile create kubelab`
+`incus profile device add kubelab eth0 nic network=kube_br0 name=eth0`
+`incus profile device add kubelab root disk path=/ pool=kubepool`
+
+Launch test image to see if network is working
+`incus launch images:ubuntu/22.04 testhost --profile kubelab`
+This way the host gets IP by DHCP and network is fully functional
+now tear down instance
+`incus delete testhost --force`
+
+Recreate insance and config it to use static IP
+`incus create images:ubuntu/22.04 testhost --profile kubelab`
+`incus config device override testhost eth0 ipv4.address=192.168.101.15`
+
+
 ## TODO
 
 * reorganize terraform code to use variables and cycles
