@@ -16,6 +16,8 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
 
 *ansible* - Ansible scripts, config and inventory
 
+*misc* - `pre-flight-check.sh` script to do the checking for `kubeadm init` when kernel config can not be queryed from `/proc/config.gz`
+
 ## Prerequisites
 
 * Incus installed
@@ -60,6 +62,7 @@ In my host OS I have a kernel which lacks `/proc/config.gz` so `kubeadm init` fa
 * `sysctl net.bridge.bridge-nf-call-iptables`
 * `sysctl net.ipv4.ip_forward`
 * `mount | grep cgroup`
+Or you can use the `misc/pre-flight-check.sh` script to do the same.
 
 `kubeadm init` still fails. The error is: required cgroups disabled
 
