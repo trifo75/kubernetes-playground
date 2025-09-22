@@ -85,14 +85,13 @@ resource "incus_profile" "kubelab" {
     # (another way would be to set these on the host OS permanently)
     "raw.lxc" = <<-EOT
       lxc.apparmor.profile=unconfined
-      #lxc.cap.drop= 
+      lxc.cap.drop=
       lxc.cgroup.devices.allow=a
       lxc.sysctl.net.ipv4.ip_forward=1
       lxc.sysctl.net.bridge.bridge-nf-call-iptables=1
       lxc.sysctl.net.bridge.bridge-nf-call-ip6tables=1
       lxc.cgroup2.devices.allow=a
       #lxc.cgroup2.controllers=cpuset,cpu,io,memory,hugetlb,pids,rdma,misc,dmem
-
     EOT
   }
 
