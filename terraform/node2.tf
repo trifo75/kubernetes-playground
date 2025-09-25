@@ -18,6 +18,12 @@ resource "incus_instance" "node2" {
     }
   }
 
+  file {
+    content = "KUBELET_EXTRA_ARGS='--fail-swap-on=false'"
+    target_path = "/etc/default/kubelet"
+  }
+
+
 }
 
 # ----------------------------
@@ -40,6 +46,8 @@ incus exec node2 -- usermod -aG sudo admin
 # Enable and start SSH
 incus exec node2 -- systemctl enable ssh
 incus exec node2 -- systemctl start ssh
+
+incus file push /boot/config-$(uname -r) node2/boot/config-$(uname -r)
 
 EOT
   }

@@ -68,6 +68,8 @@ resource "incus_profile" "kubelab" {
   }
 
   config = {
+    # disable swap
+    "limits.memory.swap" = "false"
     # Enable loading kernel modules
     "linux.kernel_modules" = "ip_tables,ip6_tables,nf_nat,overlay,br_netfilter"
 
@@ -86,12 +88,14 @@ resource "incus_profile" "kubelab" {
     "raw.lxc" = <<-EOT
       lxc.apparmor.profile=unconfined
       lxc.cap.drop=
-      lxc.cgroup.devices.allow=a
+      #lxc.cgroup.devices.allow=a
       lxc.sysctl.net.ipv4.ip_forward=1
       lxc.sysctl.net.bridge.bridge-nf-call-iptables=1
       lxc.sysctl.net.bridge.bridge-nf-call-ip6tables=1
+      #lxc.sysctl.net.netfilter.nf_conntrack_max=1
       lxc.cgroup2.devices.allow=a
       #lxc.cgroup2.controllers=cpuset,cpu,io,memory,hugetlb,pids,rdma,misc,dmem
+      lxc.mount.auto = proc:rw sys:rw cgroup:rw
     EOT
   }
 

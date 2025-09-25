@@ -19,8 +19,8 @@ resource "incus_instance" "master" {
   }
 
   file {
-    content = "Kuskubus gyémánf félkrajcárja"
-    target_path = "/fileup.txt"
+    content = "KUBELET_EXTRA_ARGS='--fail-swap-on=false'"
+    target_path = "/etc/default/kubelet"
   }
 
 }
@@ -45,6 +45,8 @@ incus exec master -- usermod -aG sudo admin
 # Enable and start SSH
 incus exec master -- systemctl enable ssh
 incus exec master -- systemctl start ssh
+
+incus file push /boot/config-$(uname -r) master/boot/config-$(uname -r)
 
 EOT
   }
