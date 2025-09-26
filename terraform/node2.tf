@@ -3,6 +3,7 @@ resource "incus_instance" "node2" {
   name     = "node2"
   image    = "images:ubuntu/22.04"
   profiles = [incus_profile.kubelab.name]
+  type = "virtual-machine"
 
   depends_on = [
     incus_profile.kubelab
@@ -18,10 +19,10 @@ resource "incus_instance" "node2" {
     }
   }
 
-  file {
-    content = "KUBELET_EXTRA_ARGS='--fail-swap-on=false'"
-    target_path = "/etc/default/kubelet"
-  }
+  # file {
+  #   content = "KUBELET_EXTRA_ARGS='--fail-swap-on=false'"
+  #   target_path = "/etc/default/kubelet"
+  # }
 
 
 }
@@ -47,7 +48,7 @@ incus exec node2 -- usermod -aG sudo admin
 incus exec node2 -- systemctl enable ssh
 incus exec node2 -- systemctl start ssh
 
-incus file push /boot/config-$(uname -r) node2/boot/config-$(uname -r)
+#incus file push /boot/config-$(uname -r) node2/boot/config-$(uname -r)
 
 EOT
   }

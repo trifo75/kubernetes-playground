@@ -16,24 +16,21 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
 
 *ansible* - Ansible scripts, config and inventory
 
-*misc* - `pre-flight-check.sh` script to do the checking for `kubeadm init` when kernel config can not be queryed from `/proc/config.gz`
-
 ## Prerequisites
 
-* Incus installed
+* Incus installed - with quemu/libvirt backing
 * terraform installed
 * Ansible installed
 
 ## Usage
 
-* in terraform directory run 'terraform plan' then 'terraform apply'. On successful completion created the 3 nodes as Ubuntu system containers, all with
+* in **terraform** directory run `terraform plan` then `terraform apply`. On successful completion created the 3 nodes as Ubuntu VM-s, all with
   *  static IP configured
-  *  user 'admin' with password 'kubepass' created
+  *  user `admin` with password `kubepass` created
   *  sshd installed and started
-  *  sudo for 'admin' user enabled
+  *  sudo for `admin` user enabled
  
-* in 'ansible' directory run 'ansible-playbook -k -K preparenodes.yml'. This does the following
-   * asks for connection password - provide password 'kubepass"
+* in **ansible** directory run `ansible-playbook preparenodes.yml`. This does the following
    * enable pubkey auth from the host to the nodes as 'admin' and as 'root'
    * creates a keypair and distributes to the nodes to communicate with each other as admin or root
    * populates /etc/hosts files on nodes
@@ -49,34 +46,44 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
    `KUBELET_EXTRA_ARGS='--node-ip 111.222.33.44'`
    Obviously edit content for your needs.
 
- ## status /  caveat
+* Log on `master` host  via `incus shell master` or `ssh root@192.168.101.10` and set up Kubernetes cluster
+  * Run `kubeadm init --pod-network-cidr=10.244.0.0/16` this initialises the control-plane. Don't forget to set `--pod-network-cidr` parameter because without it pod network can not start, but `kubeadm` won't warn you about that. When successfully initialised, kubeadm will give a command with tokens needed to connect worker nodes. Like this: `kubeadm join 192.168.101.10:6443 --token clm3xc.exhryqyu8huronp6 --discovery-token-ca-cert-hash sha256:9b91013e81a06c87913cd01a6daa1fe5b4c7a5a1096c2e7c3c95e955a7e3ea06` - save this command in a file.
+  * Choose a CNI plugin, like Flannel or Calico and install it. You can install it with
+    ```
+    export KUBECONFIG=/etc/kubernetes/admin.conf
+    kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+    ```
+  * Check if control plane status is `ready` - give it a minute or so
+    ```
+    root@master:~# kubectl get node
+    NAME     STATUS   ROLES           AGE   VERSION
+    master   Ready    control-plane   74m   v1.34.1
+    ```
+  * Add worker nodes: log in as root and run the `kubeadm join ...` command, which you saved earlier. After a minute you should see all worker nodes in `ready` status
 
-Incus system container cannot load kernel modules on it's own.
- 
-Incus instances should *ask* the host to load kernel parameters, using instance config option `linux.kernel_modules = [overlay, br_netfilter]` This way - as the container uses the hosts's kernel, required modules will be available in the container.
+## status /  caveat
 
-Other option is `security.syscalls.intercept.modprobe` - does this enable to forward the modprobe request from the container to the host?
-
-In my host OS I have a kernel which lacks `/proc/config.gz` so `kubeadm init` fails on pre-flight check. Here is what to check manually:
-* `lsmod | grep -E 'overlay|br_netfilter|nf_conntrack|ip_tables|ip_vs'`
-* `sysctl net.bridge.bridge-nf-call-iptables`
-* `sysctl net.ipv4.ip_forward`
-* `mount | grep cgroup`
-Or you can use the `misc/pre-flight-check.sh` script to do the same.
-
-`kubeadm init` still fails. The error is: required cgroups disabled
-
-
-
+We switched to use  VM-s in place of system containers, because running Kubernetes K8s in LXC system containers proved to be too close to impossible.
 
 ## Incus basics
 
-These commands create a test host in the way terraform should. This was necessary because of a struggle setting up hosts with static IP addresses without messing up name resolution.
 
-Incus network creation by hand.
+Check if libvirtd is available:
+`systemctl status libvirtd`
+
+If it is not present, install quemu / libvirt to Ubuntu host
+```
+sudo apt update
+sudo apt install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager
+sudo systemctl enable --now libvirtd
+```
+
+The commands below create a test host in the way terraform should. This was necessary because of a struggle setting up hosts with static IP addresses without messing up name resolution.
+
+Create an Incus network
 `incus network create kube_br0 ipv4.address=192.168.101.1/24 ipv4.nat=true ipv6.address=none`
 
-Storage pool creation
+Create a storage pool to be used by vm-s
 `incus storage create kubepool dir`
 
 Set up Incus profile "kubelab", adding a default `eth0` network interface, connecting into `kube_br0` network and a root disk from `kubepool` storage pool
@@ -84,13 +91,13 @@ Set up Incus profile "kubelab", adding a default `eth0` network interface, conne
 `incus profile device add kubelab eth0 nic network=kube_br0 name=eth0`
 `incus profile device add kubelab root disk path=/ pool=kubepool`
 
-Launch test image to see if network is working
-`incus launch images:ubuntu/22.04 testhost --profile kubelab`
+Launch test image as a virtual machine to see if network is working
+`incus launch images:ubuntu/22.04 testhost --profile kubelab -vm`
 This way the host gets IP by DHCP and network is fully functional
 now tear down instance
 `incus delete testhost --force`
 
-Recreate insance and config it to use static IP
+Recreate insance and config it to use static IP (192.168.101.15, selected from the range of `kube_br0` ridge adapter)
 `incus create images:ubuntu/22.04 testhost --profile kubelab`
 `incus config device override testhost eth0 ipv4.address=192.168.101.15`
 
@@ -99,3 +106,10 @@ Recreate insance and config it to use static IP
 
 * reorganize terraform code to use variables and cycles
 * implement wait time before destroying storage pool - 15s is enough after destroying instances
+
+
+kubeadm join 192.168.101.10:6443 --token clm3xc.exhryqyu8huronp6 --discovery-token-ca-cert-hash sha256:9b91013e81a06c87913cd01a6daa1fe5b4c7a5a1096c2e7c3c95e955a7e3ea06
+
+openssl s_client -connect master.local:443 -showcerts </dev/null 2>/dev/null \
+  | openssl x509 -noout -text | grep -A1 "Subject Alternative Name"
+

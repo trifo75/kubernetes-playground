@@ -58,45 +58,48 @@ resource "incus_profile" "kubelab" {
     }
   }
 
-  device {
-    name =   "kmsg"
-    type =   "unix-char"
-    properties = {
-      path =   "/dev/kmsg"
-      source = "/dev/kmsg"
-    }
-  }
+  # device {
+  #   name =   "kmsg"
+  #   type =   "unix-char"
+  #   properties = {
+  #     path =   "/dev/kmsg"
+  #     source = "/dev/kmsg"
+  #   }
+  # }
 
   config = {
     # disable swap
+    "limits.cpu" = "2"
+    "limits.memory" = "3GB"
     "limits.memory.swap" = "false"
-    # Enable loading kernel modules
-    "linux.kernel_modules" = "ip_tables,ip6_tables,nf_nat,overlay,br_netfilter"
+    "boot.autostart" = "true"
+    # # Enable loading kernel modules
+    # "linux.kernel_modules" = "ip_tables,ip6_tables,nf_nat,overlay,br_netfilter"
 
-    # Security/syscalls configs
-    "security.syscalls.intercept.setxattr"    = "true"
-    "security.syscalls.intercept.mknod"       = "true"
-    "security.syscalls.intercept.mount"       = "true"
+    # # Security/syscalls configs
+    # "security.syscalls.intercept.setxattr"    = "true"
+    # "security.syscalls.intercept.mknod"       = "true"
+    # "security.syscalls.intercept.mount"       = "true"
 
-    # Also necessary for K8s in containers
-    "security.nesting"    = "true"
-    "security.privileged" = "true"
+    # # Also necessary for K8s in containers
+    # "security.nesting"    = "true"
+    # "security.privileged" = "true"
 
-    # This is injecting necessary sysctl settings in the container
-    # which were written in /etx/sysctl.d/99-kubernetes.conf if it were a normal host
-    # (another way would be to set these on the host OS permanently)
-    "raw.lxc" = <<-EOT
-      lxc.apparmor.profile=unconfined
-      lxc.cap.drop=
-      #lxc.cgroup.devices.allow=a
-      lxc.sysctl.net.ipv4.ip_forward=1
-      lxc.sysctl.net.bridge.bridge-nf-call-iptables=1
-      lxc.sysctl.net.bridge.bridge-nf-call-ip6tables=1
-      #lxc.sysctl.net.netfilter.nf_conntrack_max=1
-      lxc.cgroup2.devices.allow=a
-      #lxc.cgroup2.controllers=cpuset,cpu,io,memory,hugetlb,pids,rdma,misc,dmem
-      lxc.mount.auto = proc:rw sys:rw cgroup:rw
-    EOT
+    # # This is injecting necessary sysctl settings in the container
+    # # which were written in /etx/sysctl.d/99-kubernetes.conf if it were a normal host
+    # # (another way would be to set these on the host OS permanently)
+    # "raw.lxc" = <<-EOT
+    #   lxc.apparmor.profile=unconfined
+    #   lxc.cap.drop=
+    #   #lxc.cgroup.devices.allow=a
+    #   lxc.sysctl.net.ipv4.ip_forward=1
+    #   lxc.sysctl.net.bridge.bridge-nf-call-iptables=1
+    #   lxc.sysctl.net.bridge.bridge-nf-call-ip6tables=1
+    #   #lxc.sysctl.net.netfilter.nf_conntrack_max=1
+    #   lxc.cgroup2.devices.allow=a
+    #   #lxc.cgroup2.controllers=cpuset,cpu,io,memory,hugetlb,pids,rdma,misc,dmem
+    #   lxc.mount.auto = proc:rw sys:rw cgroup:rw
+    # EOT
   }
 
 }

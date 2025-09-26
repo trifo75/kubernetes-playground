@@ -15,9 +15,9 @@
       blockinfile:
         path: /etc/hosts
         block: |
-          192.168.101.10 master
-          192.168.101.11 node1
-          192.168.101.12 node2
+          192.168.101.10 master.local master
+          192.168.101.11 node1.local node1
+          192.168.101.12 node2.local node2
       tags: [setupaccess]
 
     - name: Enable passwordless sudo for admin user
@@ -111,6 +111,50 @@
     # lxc/incus system containers use the hosts's kernel along with its 
     # modules and settings, so it has to be handled in terraform
 
+    ### When using VM-s, kernel modules and param settings has to be
+    # handled here
+    - name: Populate /etc/modules-load.d/k8s.conf
+      copy:
+        dest: /etc/modules-load.d/k8s.conf
+        content: |
+          overlay
+          br_netfilter
+      tags: [kernelsetup]
+
+    - name: Load needed modules now
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+      tags: [kernelsetup]
+
+    # - name: Populate /etc/sysctl.d/k8s.conf
+    #   copy:
+    #     dest: /etc/sysctl.d/k8s.conf
+    #     content: |
+    #       net.bridge.bridge-nf-call-iptables = 1
+    #       net.bridge.bridge-nf-call-ip6tables = 1
+    #       net.ipv4.ip_forward = 1
+    #   tags: [kernelsetup]
+
+
+    - name: Set sysctl params to /etc/sysctl.d/k8s.conf
+      sysctl:
+        sysctl_file: /etc/sysctl.d/k8s.conf
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+      loop:
+        - name: net.bridge.bridge-nf-call-iptables
+          value: 1
+        - name: net.bridge.bridge-nf-call-ip6tables
+          value: 1
+        - name: net.ipv4.ip_forward
+          value: 1
+      tags: [kernelsetup]
+
     # We do not force a specific version, just have the laters - maybe we should
     - name: Install containerd
       apt:
@@ -132,12 +176,12 @@
 
     # We force config changes:
     # SystemdCgroup = true
-    # sandbox_image = registry.k8s.io/pause:3.9
+    # sandbox_image = registry.k8s.io/pause:3.10.1
     - name: Get containerd default config and edit SystemdCgroup and sandbox_image values
       shell: >
         containerd config default
         | sed 's|SystemdCgroup = false|SystemdCgroup = true|g'
-        | sed 's|sandbox_image = "registry.k8s.io/pause:.*"|sandbox_image = "registry.k8s.io/pause:3.9"|'
+        | sed 's|sandbox_image = "registry.k8s.io/pause:.*"|sandbox_image = "registry.k8s.io/pause:3.10.1"|'
       register: config
       changed_when: false
       tags: [containerd]
