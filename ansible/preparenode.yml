@@ -87,13 +87,13 @@
 
     - name: populate known_hosts for admin
       shell: ssh -o StrictHostKeyChecking=false {{ item }} -- true
-      loop: "{{ play_hosts }}"
+      loop: "{{ ansible_play_hosts }}"
       become: false
       tags: [setupaccess]
 
     - name: populate known_hosts for root
       shell: ssh -o StrictHostKeyChecking=false {{ item }} -- true
-      loop: "{{ play_hosts }}"
+      loop: "{{ ansible_play_hosts }}"
       tags: [setupaccess]
 
     - name: Install prerequisite packages - Debian family edition
