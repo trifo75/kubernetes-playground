@@ -47,7 +47,7 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
    Obviously edit content for your needs.
 
 * Log on `master` host  via `incus shell master` or `ssh root@192.168.101.10` and set up Kubernetes cluster
-  * Run `kubeadm init --pod-network-cidr=10.244.0.0/16` this initialises the control-plane. Don't forget to set `--pod-network-cidr` parameter because without it pod network can not start, but `kubeadm` won't warn you about that. When successfully initialised, kubeadm will give a command with tokens needed to connect worker nodes. Like this: `kubeadm join 192.168.101.10:6443 --token clm3xc.exhryqyu8huronp6 --discovery-token-ca-cert-hash sha256:9b91013e81a06c87913cd01a6daa1fe5b4c7a5a1096c2e7c3c95e955a7e3ea06` - save this command in a file.
+  * Run `kubeadm init --pod-network-cidr=10.244.0.0/16` this initialises the control-plane. Don't forget to set `--pod-network-cidr=10.244.0.0/16` parameter because without it pod network can not start, but `kubeadm` won't warn you about that. When successfully initialised, kubeadm will give a command with tokens needed to connect worker nodes. Like this: `kubeadm join 192.168.101.10:6443 --token clm3xc.exhryqyu8huronp6 --discovery-token-ca-cert-hash sha256:9b91013e81a06c87913cd01a6daa1fe5b4c7a5a1096c2e7c3c95e955a7e3ea06` - save this command in a file.
   * Choose a CNI plugin, like Flannel or Calico and install it. You can install it with
     ```
     export KUBECONFIG=/etc/kubernetes/admin.conf
