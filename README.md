@@ -63,10 +63,9 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
 
 ## status /  caveat
 
-We switched to use  VM-s in place of system containers, because running Kubernetes K8s in LXC system containers proved to be too close to impossible.
+We switched to use  VM-s in place of system containers, because running Kubernetes K8s in LXC system containers proved to be too close to impossible. Now ater running terraform and ansible, you have the master node ready to run `kubeadm init` and and worker nodes ready to join. On WSL you might need the extra step to enable NAT on the bridge to let nodes access the internet. Use the `misc/incus-nat-setup-for-WSL.sh` script. This script relies on the existence of `kube_br0` interface, so you can not run it before terraform creates the interface, but terraform will fail to configure the nodes without accessing internet - needed to install sshd. Second run of terraform might help.
 
 ## Incus basics
-
 
 Check if libvirtd is available:
 `systemctl status libvirtd`
@@ -101,15 +100,63 @@ Recreate insance and config it to use static IP (192.168.101.15, selected from t
 `incus create images:ubuntu/22.04 testhost --profile kubelab`
 `incus config device override testhost eth0 ipv4.address=192.168.101.15`
 
+## Testing on WSL2
+
+* *WARNING* in WSL you might not have NAT passthrough enabled. To circumvent this, run `misc/incus-nat-setup-for-WSL.sh` which will enable NAT temporarily to the `kube_br0` interface. Catch: this is created *during* terraform.
+
+* install quemu, libvirt, and incus (incus is better to be installed from zabbly repo)
+```
+sudo apt update
+sudo apt install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils python3 incus gnupg software-properties-common curl -y
+```
+
+
+* install terraform from Hashicorp repo
+```
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update
+sudo apt install -y terraform
+```
+
+* install incus from the Zabby repo
+```
+curl -fsSL https://pkgs.zabbly.com/key.asc -o /etc/apt/keyrings/zabbly.asc
+echo "deb [signed-by=/etc/apt/keyrings/zabbly.asc] https://pkgs.zabbly.com/incus/stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/zabbix.list
+sudo apt update
+sudo apt install -y incus
+```
+* add local user to `incus` and `incus-admin` groups (my local username is 'trifo')
+`sudo usermod -aG incus,incus-admin trifo`
+
+* logoff and logon to apply changes user settings
+
+* Initialise Incus environement.
+run `incus admin init` 
+**TODO** directions about what to set during init
+
+* install ansible into a Python virtualenv 
+```
+python3 -m venv ~/ansible-venv   # create python virtual env
+. ~/ansible-venv/bin/activate    # sourcing activate script
+pip install ansible              # do the install
+ansible --version                # check install
+```
+
+* Remove installed stuff and clean up
+When testing is done, all data and installed software can be eliminated. First destroy virtual infrastructure:
+in terraform directory run `terraform destroy -auto-approve`. This deletes all relevant virtual machines and config they relied on.
+If you want to clean installed software as vell, then:
+```
+sudo apt remove --purge qemu-system-x86 qemu-kvm libvirt-clients libvirt-daemon-system bridge-utils terraform incus -y
+sudo apt autoremove -y
+sudo rm /etc/apt/sources.list.d/zabbly.list
+sudo rm /etc/apt/sources.list.d/hashicorp.list
+sudo apt clean  # Is this enough to get rid of all cached elements?
+```
 
 ## TODO
 
 * reorganize terraform code to use variables and cycles
 * implement wait time before destroying storage pool - 15s is enough after destroying instances
-
-
-kubeadm join 192.168.101.10:6443 --token clm3xc.exhryqyu8huronp6 --discovery-token-ca-cert-hash sha256:9b91013e81a06c87913cd01a6daa1fe5b4c7a5a1096c2e7c3c95e955a7e3ea06
-
-openssl s_client -connect master.local:443 -showcerts </dev/null 2>/dev/null \
-  | openssl x509 -noout -text | grep -A1 "Subject Alternative Name"
-
+* set FQDN hostnames for nodes. (`master` -> `master.kubernetes.local`)
