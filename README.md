@@ -1,13 +1,11 @@
-# Installing Kubernetes the hard way
+# Kubernetes practice lab virtualized on your laptop
 This is an experiment to create an automated install of a 3 node Kubernetes cluster - 1 master and 2 worker nodes.
-The scripts are subject to furthr improvement, as there are hardcoded values where I should use variables anc cycles and flexible configurations. I will improve, I promise.
-
-Kubernetes nodes need some special kernel settings that is not permitted on container instances by default. As system containers share the kernel of the host, along with its loaded modules and sysctl settings, we have to enable incus to ask the host to make the necessary settings on the start of the container instances. This is enabled using the `config { ... }` part of the instance creation. See comments there for explanation.
+The scripts are subject to further improvement, as there are hardcoded values where I should use variables anc cycles and flexible configurations. I will improve, I promise.
 
 ## Components used
 
-* Incus system containers as virtualization layer
-* terraform to automate provision of nodes
+* Virtual machines using Incus and quemu/libvirt as virtualization layer
+* Terraform to automate provision of nodes
 * Ansible to configure nodes further
 
 ## Directory structure
@@ -16,10 +14,12 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
 
 *ansible* - Ansible scripts, config and inventory
 
+*misc* - helpet script to set up NAT under WSL environement
+
 ## Prerequisites
 
 * Incus installed - with quemu/libvirt backing
-* terraform installed
+* Terraform installed
 * Ansible installed
 
 ## Usage
@@ -48,11 +48,10 @@ Kubernetes nodes need some special kernel settings that is not permitted on cont
 
 * Log on `master` host  via `incus shell master` or `ssh root@192.168.101.10` and set up Kubernetes cluster
   * Run `kubeadm init --pod-network-cidr=10.244.0.0/16` this initialises the control-plane. Don't forget to set `--pod-network-cidr=10.244.0.0/16` parameter because without it pod network can not start, but `kubeadm` won't warn you about that. When successfully initialised, kubeadm will give a command with tokens needed to connect worker nodes. Like this: `kubeadm join 192.168.101.10:6443 --token clm3xc.exhryqyu8huronp6 --discovery-token-ca-cert-hash sha256:9b91013e81a06c87913cd01a6daa1fe5b4c7a5a1096c2e7c3c95e955a7e3ea06` - save this command in a file.
-  * Choose a CNI plugin, like Flannel or Calico and install it. You can install it with
-    ```
-    export KUBECONFIG=/etc/kubernetes/admin.conf
-    kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
-    ```
+  * Set up kubeclt konfig. You can use the default config for `/etc`, exporting `KUBECONFIG` environement variable:
+    `export KUBECONFIG=/etc/kubernetes/admin.conf` or copy this config to your own home directory into `~/.kube/config` file.
+  * Choose a CNI plugin, like Flannel or Calico and install it. For example you can install *Flannel CNI plugin* with
+    `kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml`
   * Check if control plane status is `ready` - give it a minute or so
     ```
     root@master:~# kubectl get node
