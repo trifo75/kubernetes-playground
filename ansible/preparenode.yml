@@ -211,6 +211,12 @@
         kube_version: "{{ (kube_latest.content | split('.'))[:-1] | join('.') }}"
       tags: [kube]
 
+    - name: Create key directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+      tags: [kube]
+
     - name: Get public signing key 
       uri:
         url: https://pkgs.k8s.io/core:/stable:/{{ kube_version}}/deb/Release.key
@@ -221,23 +227,11 @@
 
     - name: Dearmor signkey
       shell: |
-        echo '{{ kube_signkey.content }}' | gpg --dearmor
-      register: kube_signkey_dearmored
-      changed_when: false
+        echo '{{ kube_signkey.content }}' | gpg --dearmor > /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
       tags: [kube]
-
-    - name: Create key directory
-      file:
-        path: /etc/apt/keyrings
-        state: directory
-      tags: [kube]
-
-    - name: Put dearmored signing key
-      copy:
-        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        content: "{{ kube_signkey_dearmored.stdout }}"
-      tags: [kube]
-
+      
     - name: Add Kubernetes repository
       apt_repository:
         filename: kubernetes
