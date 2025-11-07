@@ -48,7 +48,7 @@ The scripts are subject to further improvement, as there are hardcoded values wh
 
 * Log on `master` host  via `incus shell master` or `ssh root@192.168.101.10` and set up Kubernetes cluster
   * Run `kubeadm init --pod-network-cidr=10.244.0.0/16` this initialises the control-plane. Don't forget to set `--pod-network-cidr=10.244.0.0/16` parameter because without it pod network can not start, but `kubeadm` won't warn you about that. When successfully initialised, kubeadm will give a command with tokens needed to connect worker nodes. Like this: `kubeadm join 192.168.101.10:6443 --token clm3xc.exhryqyu8huronp6 --discovery-token-ca-cert-hash sha256:9b91013e81a06c87913cd01a6daa1fe5b4c7a5a1096c2e7c3c95e955a7e3ea06` - save this command in a file.
-  * Set up kubeclt konfig. You can use the default config for `/etc`, exporting `KUBECONFIG` environement variable:
+  * Set up kubectl konfig. You can use the default config for `/etc`, exporting `KUBECONFIG` environement variable:
     `export KUBECONFIG=/etc/kubernetes/admin.conf` or copy this config to your own home directory into `~/.kube/config` file.
   * Choose a CNI plugin, like Flannel or Calico and install it. For example you can install *Flannel CNI plugin* with
     `kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml`
