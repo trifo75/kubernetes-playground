@@ -10,9 +10,9 @@ locals {
   )
 
   # The first address from the network is given to the network bridge
-  # so the minimum offset is 1
+  # so the minimum offset is 2
   # We can use othe offsets to generate "nice looking" addresses
-  ip_start_offset = 1
+  ip_start_offset = 2
 
   vms = merge(
     # Master nodes
