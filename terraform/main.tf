@@ -16,7 +16,7 @@ resource "incus_network" "kube_br0" {
   name = "kube_br0"
 
   config = {
-    "ipv4.address" = "192.168.101.1/24"
+    "ipv4.address" = local.bridge_address
     "ipv4.nat"     = "true"
     "ipv6.address" = "none"
   }

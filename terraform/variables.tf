@@ -1,15 +1,4 @@
 
-# Variable with validation
-variable "kubernetes_version" {
-  description = "Desired version of kubernetes to be installed"
-  type        = string
-  default     = "1.33.1"
-
-#   validation {
-#     condition     = can(regex("^us-", var.region))
-#     error_message = "Region must be in the United States (us-*)."
-#   }
-}
 
 variable "num_masters" {
     description = "Number of control-plane nodes"
@@ -29,3 +18,10 @@ variable "network_cidr" {
     default     = "192.168.101.0/24"
 }
 
+variable "master_vm_cfg" {
+    default    = {
+        cpu    = 2
+        memory = 2048
+    }
+  
+}
