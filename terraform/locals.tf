@@ -52,7 +52,26 @@ locals {
           Role        = "worker"
         }
       }
+    },
+    {
+      for i in range(1) :
+      "balancer${i + 1}" => {
+        hostname      = "balancer${i + 1}"
+        ip_address    = cidrhost(var.network_cidr, local.ip_start_offset + var.num_masters + var.num_workers + i)
+        role          = "balancer"
+        node_type     = "balancer"
+        cpu           = 1
+        memory        = 1024
+        # disk_size     = 100
+        is_master     = false
+        index         = i + 1
+        tags = {
+          Name        = "balancer${i + 1}"
+          Role        = "balancer"
+        }
+      }
     }
+
   )
 
 

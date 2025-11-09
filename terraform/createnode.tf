@@ -73,17 +73,28 @@ resource "local_file" "ansible_inventory" {
   content = <<-EOT
 [controlplane]
 %{for k, v in local.vms~}
-%{if v.is_master~}
+%{if v.node_type == "master" ~}
 ${k} ansible_ssh_host=${v.ip_address} 
 %{endif~}
 %{endfor~}
 
-[workers]
+[workerplane]
 %{for k, v in local.vms~}
-%{if !v.is_master~}
+%{if v.node_type == "worker" ~}
 ${k} ansible_ssh_host=${v.ip_address} 
 %{endif~}
 %{endfor~}
+
+[balancers]
+%{for k, v in local.vms~}
+%{if v.node_type == "balancer" ~}
+${k} ansible_ssh_host=${v.ip_address} 
+%{endif~}
+%{endfor~}
+
+[kubernetes:children]
+controlplane
+workerplane
 
 [all:vars]
 EOT
