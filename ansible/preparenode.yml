@@ -11,13 +11,15 @@
       become: false
       delegate_to: localhost
 
+    # Generate records for every host in the inventory
+    # into the client's hosts file
     - name: populate hosts file
       blockinfile:
         path: /etc/hosts
         block: |
-          192.168.101.10 master.local master
-          192.168.101.11 node1.local node1
-          192.168.101.12 node2.local node2
+          {% for h in hostvars -%}
+          {{ ansible_ssh_host }} {{ h }}
+          {% endfor %}
       tags: [setupaccess]
 
     - name: Enable passwordless sudo for admin user
@@ -45,7 +47,7 @@
         - root
       tags: [setupaccess]
 
-    - name: Put own authorized key to nodes
+    - name: Put generated internode authorized key to nodes
       authorized_key:
         user: "{{ item }}"
         state: present

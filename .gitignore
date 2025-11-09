@@ -1,4 +1,5 @@
 terraform/.terraform*
 terraform/*tfstate*
 ansible/internode*
+ansible/inventory
 
