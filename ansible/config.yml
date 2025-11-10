@@ -1,0 +1,13 @@
+
+# Kubernetes is (still) using a policy that every minor version has it's own software package repository
+# We will set up repo using this info and install the latest patch version from there
+desired_kuberneres_version: v1.33
+
+# Refer containerd version compatibility at https://containerd.io/releases/
+# to choose the right one. 1.7 is LTS, so 1.7.x might be a good choice for a while
+# NOT IMPLEMENTED YET
+containerd_version: 1.7.27-1
+
+# Sandbox or Pause container image to be used. Select the version you need based on
+# kubernetes and containerd versions
+pause_image: "registry.k8s.io/pause:3.10"
