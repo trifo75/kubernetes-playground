@@ -21,7 +21,20 @@ variable "network_cidr" {
 variable "master_vm_cfg" {
     default    = {
         cpu    = 2
-        memory = 2048
+        memory = 4096
     }
-  
+}
+
+variable "worker_vm_cfg" {
+    default    = {
+        cpu    = 2
+        memory = 4096
+    }
+}
+
+variable "balancer_vm_cfg" {
+    default    = {
+        cpu    = 1
+        memory = 1024
+    }
 }

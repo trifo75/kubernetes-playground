@@ -23,8 +23,8 @@ locals {
         ip_address    = cidrhost(var.network_cidr, local.ip_start_offset + i)
         role          = "master"
         node_type     = "master"
-        cpu           = 2
-        memory        = 4096
+        cpu           = var.master_vm_cfg.cpu
+        memory        = var.master_vm_cfg.memory
         # disk_size     = 50
         is_master     = true
         index         = i + 1
@@ -42,8 +42,8 @@ locals {
         ip_address    = cidrhost(var.network_cidr, local.ip_start_offset + var.num_masters + i)
         role          = "worker"
         node_type     = "worker"
-        cpu           = 4
-        memory        = 8192
+        cpu           = var.worker_vm_cfg.cpu
+        memory        = var.worker_vm_cfg.memory
         # disk_size     = 100
         is_master     = false
         index         = i + 1
@@ -60,8 +60,8 @@ locals {
         ip_address    = cidrhost(var.network_cidr, local.ip_start_offset + var.num_masters + var.num_workers + i)
         role          = "balancer"
         node_type     = "balancer"
-        cpu           = 1
-        memory        = 1024
+        cpu           = var.balancer_vm_cfg.cpu
+        memory        = var.balancer_vm_cfg.memory
         # disk_size     = 100
         is_master     = false
         index         = i + 1
