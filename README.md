@@ -22,6 +22,24 @@ The scripts are subject to further improvement, as there are hardcoded values wh
 * Terraform installed
 * Ansible installed
 
+## Configuration
+
+### Terraform part
+
+You can set some params of the VM creation in the **terraform.tfvars** file.
+
+We choose an Incus image of **Ubuntu 22.04**, a non cloud-init version. The installation process uses Debian style commands and package names, so do not set the base image to a RedHat style one. It won't work without modifying the VM provisioning commands and also the kubernetes related software installation part in the Ansible code.
+
+You can set the desired target network in CIDR notation. We will create an *Incus bridge* using the first address of that nework range. The nodes will get theyr IP addresses iterated from the second address.
+
+You can set the desired number of *master* and *worker* nodes. They will appear as *master1*, *master2*, ... and *worker1*, *worker2*, ...
+
+### Ansible part
+
+In **config.yml** you can select the desired software versions.
+* kubernetes_version: used in form **v1.33** - will set up the kubernetes repository for that version an installs the latest kubelet, kubeadn and kubectl.
+* containerd_version: full version string to be used. We will install the exact vesion selected. Please refer *containerd* install guide to select appropriate version for the selected kubernetes version.
+
 ## Usage
 
 * in **terraform** directory run `terraform plan` then `terraform apply`. On successful completion created the 3 nodes as Ubuntu VM-s, all with
@@ -29,7 +47,9 @@ The scripts are subject to further improvement, as there are hardcoded values wh
   *  user `admin` with password `kubepass` created
   *  sshd installed and started
   *  sudo for `admin` user enabled
- 
+
+Terraform generates an Ansible inventory, which is configured as the default inventory in ansible.cfg. It will list all the created nodes and theyr IP addresses as *ansible_ssh_host* variable. There will be two separate groups for masters and workers.
+
 * in **ansible** directory run `ansible-playbook preparenodes.yml`. This does the following
    * enable pubkey auth from the host to the nodes as 'admin' and as 'root'
    * creates a keypair and distributes to the nodes to communicate with each other as admin or root
@@ -47,7 +67,15 @@ The scripts are subject to further improvement, as there are hardcoded values wh
    Obviously edit content for your needs.
 
 * Log on `master` host  via `incus shell master` or `ssh root@192.168.101.10` and set up Kubernetes cluster
-  * Run `kubeadm init --pod-network-cidr=10.244.0.0/16` this initialises the control-plane. Don't forget to set `--pod-network-cidr=10.244.0.0/16` parameter because without it pod network can not start, but `kubeadm` won't warn you about that. When successfully initialised, kubeadm will give a command with tokens needed to connect worker nodes. Like this: `kubeadm join 192.168.101.10:6443 --token clm3xc.exhryqyu8huronp6 --discovery-token-ca-cert-hash sha256:9b91013e81a06c87913cd01a6daa1fe5b4c7a5a1096c2e7c3c95e955a7e3ea06` - save this command in a file.
+  * Run `kubeadm init` with the applicable parameters to initialise the control-plane
+    * `--pod-network-cidr=10.244.0.0/16`  Obligatory parameter because without it pod network can not start, but `kubeadm` won't warn you about that.
+    * `--control-plane-endpoint=xxx.xxx.xxx.xxx:6443`  When creating multi master k8s cluster, you need a common endpoint
+       to be used. Here we create an external load balancer host **balancer1**, which is configured to send requests to all master nodes to the
+       port `6443`. Use the IP address of the balancer node. For single master, it can be omitted.
+    * `--upload-certs`  To creare multi-master cluster, it is advisable to store the generated certs in the etcd. Otherwise you need to copy the manually to the additional master nodes when they join the cluster.
+    When successfully initialised, kubeadm will give a command with tokens needed to connect master and worker nodes. Save the commands, as the join tokens can not be displayed again.
+    * for adding master nodes: `kubeadm join 192.168.211.9:6443 --token ruz8ac.p9u0h82cu1xnn6ho --discovery-token-ca-cert-hash sha256:66e...b6e72d --control-plane --certificate-key 7db87a17ff2e45d6...f69a18171a`
+    * for adding worker nodes: `kubeadm join 192.168.101.10:6443 --token clm3xc.exhryqyu8huronp6 --discovery-token-ca-cert-hash sha256:9b91013e81a...5a7e3ea06`
   * Set up kubectl konfig. You can use the default config for `/etc`, exporting `KUBECONFIG` environement variable:
     `export KUBECONFIG=/etc/kubernetes/admin.conf` or copy this config to your own home directory into `~/.kube/config` file.
   * Choose a CNI plugin, like Flannel or Calico and install it. For example you can install *Flannel CNI plugin* with
@@ -156,6 +184,10 @@ sudo apt clean  # Is this enough to get rid of all cached elements?
 
 ## TODO
 
-* reorganize terraform code to use variables and cycles
-* implement wait time before destroying storage pool - 15s is enough after destroying instances
 * set FQDN hostnames for nodes. (`master` -> `master.kubernetes.local`)
+* set Incus image as a variable
+* set Incus VM resources (mem/cpu) as variables - they are hardcoded now
+* create TF output summary (created VM params, ansible command to run, ...)
+* VM creation gets stuck when not /24 network is choosen
+
+* implement **config.yml** in Ansible part
