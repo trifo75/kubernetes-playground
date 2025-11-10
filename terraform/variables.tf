@@ -35,6 +35,6 @@ variable "worker_vm_cfg" {
 variable "balancer_vm_cfg" {
     default    = {
         cpu    = 1
-        memory = 1024
+        memory = 2048
     }
 }
