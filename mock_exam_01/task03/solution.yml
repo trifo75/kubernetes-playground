@@ -1,0 +1,24 @@
+# This manifest needs some kind of network policy controller installed
+# Calico CNI has one integrated, for example
+# We did not explicitly add policyTypes and allow egress to all, because
+# having only ingress defined, implies that policyTypes field
+# will be ["ingress"] and ad there is no restriction on egress, 
+# all outbound traffic will be let through
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-policy
+  namespace: database
+spec:
+  podSelector:
+    matchLabels:
+      app: mysql
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - port: 3306
+          protocol: TCP
